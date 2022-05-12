@@ -1,2 +1,2 @@
 # ezDetection
-use mmDetection for referenceooo
+use mmDetection for reference
