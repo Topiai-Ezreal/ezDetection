@@ -15,7 +15,7 @@ color_maps = {1:(104,221,230),2:(153,255,153),3:(254,0,0),4:(193,18,28),5:(209,9
               37:(220,11,200),38:(22,11,150), 100:(255,0,0),200:(255,0,0)}
 ill_map = ['1', '2', '3', '4', '5', '7', '8', '9', '10', '11', '12', '13',
            '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '25',
-           '26', '27', '28', '29', '30', '31', '32', '33', '34', '35', '36','37']
+           '26', '27', '28', '29', '30', '31', '32', '33', '34', '35', '36','37', '38']
 ill_name_map = {1:' 1：视网膜前膜',2:' 2：视网膜裂孔',3:' 3：玻璃体黄斑牵拉',4:' 4：视网膜囊性变样',5:' 5：视网膜劈裂',7:' 7：黄斑水肿（非囊性）',\
            8:' 8：视网膜内液',9:' 9：视网膜下积液',10:'10：弥漫性高反射病灶',11:'11：局部网膜内高反射点',12:'12：视网膜色素上皮（RPE）结构紊乱含玻璃疣',\
            13:'13：瘢痕与机化',14:'14：视网膜神经纤维层（RNFL）萎缩',15:'15：脉络膜增厚',16:'16：圆顶状色素上皮层脱落（PED）',\
@@ -26,13 +26,6 @@ ill_name_map = {1:' 1：视网膜前膜',2:' 2：视网膜裂孔',3:' 3：玻璃
            37:'37：玻璃体后脱离',38:'38：玻璃体混浊（含玻璃体出血）', 100:'100：其它'}
 
 
-def conc(path1, path2, path3):
-    for name in os.listdir(path2):
-        if name in os.listdir(path1):
-            img1 = cv2.imread(os.path.join(path1, name))
-            img2 = cv2.imread(os.path.join(path2, name))
-            img = np.concatenate((img1, img2), axis=1)
-            cv2.imwrite(os.path.join(path3, name), img)
 
 def AddChineseText(img, text, left, top, textColor, textSize):
     if isinstance(img, np.ndarray):  # 判断是否OpenCV图片类型
@@ -85,21 +78,15 @@ def draw_dets(img, illness, pos_list):
     return img
 
 
-def visualize_on_cpu():
-
-    config_file = 'E:\\jlf\\c\\r50.py'
-    checkpoint_file = 'E:\\jlf\\c\\epoch_26.pth'
-    img_path = 'E:\\jlf\\c\\topi_raw'
-    save_path = 'E:\\jlf\\c\\topi_test'
-
+def visualize_on_cpu(config, checkpoint, img_path, save_path, gts_path):
     device = 'cpu'
-    model = init_detector(config_file, checkpoint_file, device=device)
+    model = init_detector(config, checkpoint, device=device)
 
     for name in os.listdir(img_path):
         x_ill, y_ill = 0, 0
         temp = []
         raw_img = os.path.join(img_path, name)
-        img = cv2.imread(os.path.join(raw_img))
+        img = cv2.imread(raw_img)
         n_img = np.zeros((img.shape[0] + padding_size * 2, img.shape[1] + padding_size * 2, 3), dtype='uint8')
         n_img[padding_size:-padding_size, padding_size:-padding_size] = img
         img = n_img
@@ -116,16 +103,17 @@ def visualize_on_cpu():
                     img = AddChineseText(img, ill_name, x_ill, y_ill, pil_color, 18)
                     y_ill += 18
 
-        # n_img = np.zeros((img.shape[0] + padding_size * 2, img.shape[1] + padding_size * 2, 3), dtype='uint8')
-        # n_img[padding_size:-padding_size, padding_size:-padding_size] = img
-        # img = n_img
-
+        if name in os.listdir(gts_path):
+            gt_img = cv2.imread(os.path.join(gts_path, name))
+            img = np.concatenate((gt_img, img), axis=1)
         cv2.imwrite(os.path.join(save_path, name), img)
 
 
 if __name__ == '__main__':
-    # visualize_on_cpu()
-    name_path = 'E:\\jlf\\c\\topi_tag'
-    raw_path = 'E:\\jlf\\c\\topi_test'
-    new_path = 'E:\\jlf\\c\\topi_0507'
-    conc(name_path, raw_path, new_path)
+    config_file = 'E:\\0726_ai_annotation\\all_data\\datasets\\config.py'
+    checkpoint_file = 'E:\\0726_ai_annotation\\all_data\\datasets\\epoch_28.pth'
+    img_path = 'E:\\0726_ai_annotation\\all_data\\datasets\\test_img'
+    gts_path = 'E:\\0726_ai_annotation\\all_data\\gts_visualize'
+    save_path = 'E:\\0726_ai_annotation\\all_data\\datasets\\visualize'
+    visualize_on_cpu(config_file, checkpoint_file, img_path, save_path, gts_path)
+    # conc(gts_path, img_path, save_path)
